@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>登录 · AI 视觉质检助手</title>
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<div class="login-wrap">
+  <div class="login-left">
+    <h1>AI 视觉质检助手<span class="dot">.</span></h1>
+    <p>面向医疗器械产线的视觉质检系统：上传产品照片，多模态大模型自动识别缺陷类型并分级，
+       质检记录全量入库、可追溯、可统计。AI 初检 + 人工复核，双保险。</p>
+    <div class="feat">
+      <div><b>◆</b> VLM 缺陷识别：类型 / 严重度 / 位置框 / 置信度</div>
+      <div><b>◆</b> 归一化坐标框，前端 Canvas 实时标注</div>
+      <div><b>◆</b> 质检记录追溯：批次 / 产品 / 结论多维筛选</div>
+      <div><b>◆</b> 质量看板：合格率趋势 / 缺陷 Pareto / 产品对比</div>
+      <div><b>◆</b> Mock / 真实 VLM 一键切换，离线可演示</div>
+    </div>
+  </div>
+  <div class="login-right">
+    <div class="login-card">
+      <h2>登录</h2>
+      <div class="login-err" id="err"></div>
+      <input id="username" placeholder="用户名" value="admin" autocomplete="username">
+      <input id="password" type="password" placeholder="密码" value="123456" autocomplete="current-password">
+      <button class="btn block" onclick="doLogin()">进入系统</button>
+      <div class="login-hint">演示账号：admin / 123456</div>
+    </div>
+  </div>
+</div>
+<script>
+async function doLogin() {
+  const err = document.getElementById('err');
+  err.textContent = '';
+  const username = document.getElementById('username').value.trim();
+  const password = document.getElementById('password').value;
+  try {
+    const r = await fetch('/api/auth/login', {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({username, password})
+    });
+    const j = await r.json();
+    if (j.code === 0) location.href = '/index.html';
+    else err.textContent = j.msg || '登录失败';
+  } catch (e) { err.textContent = '无法连接后端，请先启动服务'; }
+}
+document.getElementById('password').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+</script>
+</body>
+</html>

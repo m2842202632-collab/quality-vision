@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI 视觉质检助手</title>
+<link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<div class="layout">
+  <div class="sidebar">
+    <div class="logo">质检助手<span class="dot">.</span></div>
+    <div class="nav">
+      <button data-page="inspect" class="active" onclick="nav('inspect')">◉ 智能检测</button>
+      <button data-page="records" onclick="nav('records')">▤ 质检记录</button>
+      <button data-page="dashboard" onclick="nav('dashboard')">◈ 统计看板</button>
+      <button data-page="products" onclick="nav('products')">⚙ 产品与标准</button>
+    </div>
+    <div class="side-foot">
+      <div id="who">—</div>
+      <button class="btn ghost sm" onclick="logout()">退出登录</button>
+    </div>
+  </div>
+
+  <div class="main">
+    <!-- 智能检测 -->
+    <div class="page active" id="page-inspect">
+      <h2>智能检测 <span class="badge mock" id="srcBadge">MOCK 模式</span></h2>
+      <div class="card">
+        <div class="form-row">
+          <label>产品</label><select id="productSel"></select>
+          <label>批次号</label><input id="batchNo" placeholder="如 B20261007（留空自动生成）" style="width:220px">
+        </div>
+        <div class="drop" id="drop">
+          <input type="file" id="fileInput" accept="image/*">
+          <div>📷 点击选择或拖拽质检照片到这里</div>
+          <div style="font-size:12px;margin-top:6px">支持 JPG/PNG，自动压缩到 1024px 后送检</div>
+        </div>
+        <div class="form-row">
+          <button class="btn" id="inspectBtn" onclick="doInspect()" disabled>开始 AI 检测</button>
+          <span id="inspectTip" class="loading"></span>
+        </div>
+      </div>
+      <div class="card" id="resultCard" style="display:none">
+        <h3>检测结果 <span id="resultBadge"></span> <span style="float:right;color:var(--muted);font-size:12px" id="latencyLine"></span></h3>
+        <div id="previewWrap"><img id="previewImg"><canvas id="bboxCanvas"></canvas></div>
+        <div class="defect-list" id="defectList"></div>
+        <div class="form-row" style="margin-top:16px">
+          <label>人工复核</label>
+          <button class="btn sm" onclick="confirmResult('PASS')">✓ 确认合格</button>
+          <button class="btn danger sm" onclick="confirmResult('FAIL')">✕ 确认不合格</button>
+          <input id="confirmNote" placeholder="复核备注（可选）" style="flex:1;min-width:200px">
+        </div>
+      </div>
+    </div>
+
+    <!-- 质检记录 -->
+    <div class="page" id="page-records">
+      <h2>质检记录追溯</h2>
+      <div class="card">
+        <div class="toolbar">
+          <select id="fProduct"><option value="">全部产品</option></select>
+          <input id="fBatch" placeholder="批次号" style="width:140px">
+          <select id="fResult"><option value="">AI结论全部</option><option>PASS</option><option>FAIL</option></select>
+          <select id="fStatus"><option value="">状态全部</option><option value="AI_DONE">待复核</option><option value="CONFIRMED">已复核</option></select>
+          <button class="btn sm" onclick="loadRecords(1)">查询</button>
+        </div>
+        <table>
+          <thead><tr><th>ID</th><th>产品</th><th>批次</th><th>AI结论</th><th>缺陷数</th><th>来源</th><th>状态</th><th>检测时间</th><th>操作</th></tr></thead>
+          <tbody id="recordRows"></tbody>
+        </table>
+        <div class="pager"><button class="btn ghost sm" onclick="loadRecords(pg-1)">‹ 上一页</button><span id="pgInfo"></span><button class="btn ghost sm" onclick="loadRecords(pg+1)">下一页 ›</button></div>
+      </div>
+    </div>
+
+    <!-- 统计看板 -->
+    <div class="page" id="page-dashboard">
+      <h2>统计看板</h2>
+      <div class="grid4" style="margin-bottom:16px">
+        <div class="card kpi"><div class="v" id="kTotal">—</div><div class="l">检测总数（14天）</div></div>
+        <div class="card kpi"><div class="v" id="kRate">—</div><div class="l">AI 合格率</div></div>
+        <div class="card kpi"><div class="v warn" id="kPending">—</div><div class="l">待复核</div></div>
+        <div class="card kpi"><div class="v bad" id="kDefect">—</div><div class="l">缺陷检出（按类型）</div></div>
+      </div>
+      <div class="grid2">
+        <div class="card"><h3>每日合格率趋势</h3><div class="chart" id="chTrend"></div></div>
+        <div class="card"><h3>缺陷类型 Pareto</h3><div class="chart" id="chPareto"></div></div>
+        <div class="card"><h3>严重度分布</h3><div class="chart" id="chSev"></div></div>
+        <div class="card"><h3>各产品合格率对比</h3><div class="chart" id="chProd"></div></div>
+      </div>
+    </div>
+
+    <!-- 产品与标准 -->
+    <div class="page" id="page-products">
+      <h2>产品与质检标准</h2>
+      <div class="card">
+        <h3>产品列表</h3>
+        <table><thead><tr><th>编码</th><th>名称</th><th>规格</th></tr></thead><tbody id="prodRows"></tbody></table>
+      </div>
+      <div class="card">
+        <h3>质检标准（检测项 × 缺陷类型 × 严重度规则）</h3>
+        <div class="toolbar"><select id="sProduct"><option value="">全部产品</option></select><button class="btn sm" onclick="loadStandards()">查询</button></div>
+        <table><thead><tr><th>产品</th><th>检测项</th><th>关注缺陷类型</th><th>严重度规则</th></tr></thead><tbody id="stdRows"></tbody></table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 记录详情弹窗 -->
+<div class="modal-mask" id="detailMask">
+  <div class="modal">
+    <button class="btn ghost sm close" onclick="closeDetail()">关闭</button>
+    <h3>质检记录详情</h3>
+    <div class="kv" id="detailKv"></div>
+    <div class="detail-img" style="margin-bottom:12px"><img id="detailImg"><canvas id="detailCanvas" style="position:absolute;left:0;top:0;pointer-events:none"></canvas></div>
+    <h3 style="margin-top:8px">AI 结构化结果</h3>
+    <pre class="json" id="detailJson"></pre>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="/js/echarts.min.js"></script>
+<script src="/js/app.js"></script>
+<script src="/js/inspect.js"></script>
+<script src="/js/records.js"></script>
+<script src="/js/dashboard.js"></script>
+<script src="/js/products.js"></script>
+</body>
+</html>

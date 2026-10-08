@@ -1,0 +1,25 @@
+# H2 演示模式：无需安装 MySQL，开箱即跑
+# 启动：mvn spring-boot:run -Dspring-boot.run.profiles=demo
+spring:
+  datasource:
+    url: jdbc:h2:mem:qv_demo;MODE=MySQL;DB_CLOSE_DELAY=-1;NON_KEYWORDS=USER
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: ""
+  sql:
+    init:
+      mode: always
+      schema-locations: classpath:schema-demo.sql
+      data-locations: classpath:data-demo.sql
+      continue-on-error: true
+
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true
+
+vlm:
+  mock-enabled: false
+
+logging:
+  level:
+    com.qualityvision: INFO

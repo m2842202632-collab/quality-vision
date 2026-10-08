@@ -1,0 +1,22 @@
+# 构建产物
+target/
+*.class
+
+# IDE
+.idea/
+*.iml
+.vscode/
+.settings/
+.classpath
+.project
+
+# 运行时上传目录（仅保留演示样例）
+uploads/*
+!uploads/samples/
+!uploads/samples/*.jpg
+
+# 日志与临时文件
+*.log
+*.tmp
+.DS_Store
+Thumbs.db
